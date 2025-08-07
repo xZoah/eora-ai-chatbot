@@ -10,6 +10,7 @@ router = APIRouter(prefix="/health", tags=["health"])
 
 
 @router.get("/")
+@router.get("")
 async def health_check() -> Dict[str, Any]:
     """Проверка состояния API"""
     try:
