@@ -11,11 +11,11 @@ from app.api.routes import chat_router, health_router
 
 # Создание FastAPI приложения
 app = FastAPI(
-    title=settings.APP_NAME,
+    title="EORA AI Chat Bot",
     version="0.1.0",
     description="Интеллектуальный чат-бот для консультаций клиентов EORA",
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # Настройка CORS
