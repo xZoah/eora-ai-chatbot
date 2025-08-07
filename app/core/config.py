@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
     
     # Application
-    APP_NAME: str = "EORA AI Chat Bot"
+    APP_NAME: str = "EORA AI Chat Bot - DEPLOYED VERSION 2025-08-07"
     DEBUG: bool = True
     LOG_LEVEL: str = "INFO"
     API_HOST: str = "0.0.0.0"

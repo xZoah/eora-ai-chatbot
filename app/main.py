@@ -11,7 +11,7 @@ from app.api.routes import chat_router, health_router
 
 # Создание FastAPI приложения
 app = FastAPI(
-    title="EORA AI Chat Bot",
+    title=settings.APP_NAME,
     version="0.1.0",
     description="Интеллектуальный чат-бот для консультаций клиентов EORA",
     docs_url="/docs",
