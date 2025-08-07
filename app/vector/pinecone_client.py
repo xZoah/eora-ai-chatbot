@@ -6,7 +6,7 @@ import os
 import asyncio
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-from pinecone import Pinecone, ServerlessSpec
+from pinecone import Pinecone
 from loguru import logger
 
 
