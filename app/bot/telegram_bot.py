@@ -391,6 +391,24 @@ class EoraTelegramBot:
         try:
             from telegram import Update, Bot
             
+            # Инициализируем RAG менеджер если не инициализирован
+            if not self.rag_manager:
+                logger.info("🔧 Инициализируем RAG менеджер для webhook...")
+                self.rag_manager = RAGManager()
+                if not self.rag_manager.initialize_services():
+                    logger.error("❌ Не удалось инициализировать RAG менеджер")
+                    return
+            
+            # Инициализируем базу данных если не инициализирована
+            if not self.database_service:
+                logger.info("🔧 Инициализируем базу данных для webhook...")
+                try:
+                    self.database_service = DatabaseService()
+                    if not self.database_service.initialize():
+                        logger.warning("⚠️ Не удалось инициализировать базу данных, продолжаем без неё")
+                except Exception as e:
+                    logger.warning(f"⚠️ База данных недоступна: {e}")
+            
             # Создаем Bot объект для обработки
             bot = Bot(token=self.bot_token)
             
