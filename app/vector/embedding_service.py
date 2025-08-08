@@ -18,8 +18,8 @@ class EmbeddingService:
             raise ValueError("OPENAI_API_KEY не найден в переменных окружения")
         
         # Настраиваем OpenAI
-        openai.api_key = self.api_key
-        self.model = "text-embedding-3-small"
+        self.client = openai.OpenAI(api_key=self.api_key)
+        self.model = "text-embedding-3-small"  # Модель с возможностью уменьшения размерности
         
     def generate_embedding(self, text: str) -> Optional[List[float]]:
         """Генерировать эмбеддинг для текста"""
@@ -35,12 +35,13 @@ class EmbeddingService:
                 logger.info(f"Текст обрезан до {max_length} символов")
             
             # Генерируем эмбеддинг
-            response = openai.embeddings.create(
+            response = self.client.embeddings.create(
+                model=self.model,  # Используем модель из инициализации
                 input=text,
-                model=self.model
+                dimensions=512  # Уменьшаем размерность до 512 для совместимости с индексом
             )
-            embedding = response.data[0].embedding
             
+            embedding = response.data[0].embedding
             logger.debug(f"Сгенерирован эмбеддинг размерности {len(embedding)}")
             return embedding
             

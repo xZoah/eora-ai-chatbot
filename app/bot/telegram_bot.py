@@ -200,12 +200,19 @@ class EoraTelegramBot:
         processing_message = await update.message.reply_text("🤔 Обрабатываю ваш запрос...")
         
         try:
+            # Засекаем время обработки
+            import time
+            start_time = time.time()
+            
             # Обрабатываем запрос через RAG pipeline
             response = self.rag_manager.process_query(
                 query=message_text,
                 complexity_level=complexity_level,
                 top_k=5
             )
+            
+            # Вычисляем время обработки
+            processing_time = time.time() - start_time
             
             if response:
                 # Форматируем ответ для Telegram
@@ -214,26 +221,21 @@ class EoraTelegramBot:
                 logger.success(f"✅ Ответ отправлен пользователю {user_id}")
                 
                 # Сохраняем сообщение в базу данных
-                if self.database_service:
-                    # Получаем или создаем пользователя
-                    db_user = self.database_service.get_or_create_user(
-                        telegram_id=str(user_id),
-                        username=update.effective_user.username,
-                        first_name=update.effective_user.first_name,
-                        last_name=update.effective_user.last_name
-                    )
-                    
-                    if db_user:
-                        # Получаем активную сессию или создаем новую
-                        session = self.database_service.get_or_create_active_session(db_user.id)
-                        if session:
-                            # Сохраняем сообщение
-                            self.database_service.save_message(
-                                session_id=session.session_id,
-                                user_message=message_text,
-                                bot_response=response,
-                                complexity_level=complexity_level
-                            )
+                if self.database_service and self.database_service.engine:
+                    try:
+                        session_id = await self.database_service.get_or_create_active_session(str(user_id))
+                        await self.database_service.save_message(
+                            session_id=session_id,
+                            user_message=message_text,
+                            bot_response=response,
+                            complexity_level=complexity_level,
+                            processing_time=processing_time
+                        )
+                        logger.success(f"✅ Сообщение сохранено в БД для пользователя {user_id}")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Не удалось сохранить в БД: {e}")
+                else:
+                    logger.info("ℹ️ База данных недоступна, пропускаем сохранение")
             else:
                 await update.message.reply_text("❌ Извините, не удалось найти подходящую информацию для вашего вопроса. Попробуйте переформулировать запрос.")
                 logger.error(f"❌ Не удалось сгенерировать ответ для пользователя {user_id}")
@@ -424,7 +426,24 @@ class EoraTelegramBot:
             
             # Обрабатываем сообщение
             if update.message:
-                await self.handle_message(update, context)
+                # Проверяем, является ли сообщение командой
+                if update.message.text and update.message.text.startswith('/'):
+                    command = update.message.text.split()[0].lower()
+                    
+                    if command == '/start':
+                        await self.start_command(update, context)
+                    elif command == '/help':
+                        await self.help_command(update, context)
+                    elif command == '/settings':
+                        await self.settings_command(update, context)
+                    elif command == '/stats':
+                        await self.stats_command(update, context)
+                    else:
+                        # Неизвестная команда
+                        await update.message.reply_text("❌ Неизвестная команда. Используйте /start для начала работы.")
+                else:
+                    # Обычное текстовое сообщение
+                    await self.handle_message(update, context)
             elif update.callback_query:
                 await self.handle_callback(update, context)
                 
