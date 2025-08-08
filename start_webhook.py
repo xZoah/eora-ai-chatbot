@@ -5,12 +5,15 @@
 
 import os
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, APIRouter
 from app.main import app
 from app.bot.telegram_bot import EoraTelegramBot
 
 # Создаем глобальный экземпляр бота
 telegram_bot = None
+
+# Создаем отдельный роутер для webhook
+webhook_router = APIRouter(prefix="/webhook", tags=["webhook"])
 
 def initialize_telegram_bot():
     """Инициализировать Telegram бота"""
@@ -27,8 +30,8 @@ def initialize_telegram_bot():
         print(f"❌ Failed to initialize bot: {e}")
         return False
 
-# Добавляем webhook endpoint к FastAPI
-@app.post("/webhook/telegram")
+# Добавляем webhook endpoint к роутеру
+@webhook_router.post("/telegram")
 async def telegram_webhook(request: Request):
     """Webhook endpoint для Telegram бота"""
     global telegram_bot
@@ -48,7 +51,7 @@ async def telegram_webhook(request: Request):
         print(f"❌ Webhook error: {e}")
         return {"error": str(e)}
 
-@app.get("/webhook/telegram/setup")
+@webhook_router.get("/telegram/setup")
 async def setup_webhook():
     """Настроить webhook для Telegram бота"""
     global telegram_bot
@@ -62,7 +65,7 @@ async def setup_webhook():
         webhook_url = f"{app_url}/webhook/telegram"
         
         # Настраиваем webhook
-        success = telegram_bot.setup_webhook(webhook_url)
+        success = await telegram_bot.setup_webhook(webhook_url)
         
         if success:
             return {"status": "webhook_set", "url": webhook_url}
@@ -72,6 +75,9 @@ async def setup_webhook():
     except Exception as e:
         print(f"❌ Webhook setup error: {e}")
         return {"error": str(e)}
+
+# Подключаем роутер к основному приложению
+app.include_router(webhook_router)
 
 def main():
     """Главная функция"""

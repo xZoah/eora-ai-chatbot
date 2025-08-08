@@ -365,15 +365,15 @@ class EoraTelegramBot:
             "medium": "📋 Средний", 
             "hard": "📖 Сложный"
         }
-        return levels.get(level, "�� Средний")
+        return levels.get(level, "📋 Средний")
 
-    def setup_webhook(self, webhook_url: str) -> bool:
+    async def setup_webhook(self, webhook_url: str) -> bool:
         """Настроить webhook для бота"""
         try:
             from telegram import Bot
             
             bot = Bot(token=self.bot_token)
-            result = bot.set_webhook(url=webhook_url)
+            result = await bot.set_webhook(url=webhook_url)
             
             if result:
                 logger.success(f"✅ Webhook установлен: {webhook_url}")
