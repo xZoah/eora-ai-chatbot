@@ -62,9 +62,21 @@ def create_database_engine_alternative():
     try:
         # Используем DATABASE_URL как основной способ
         database_url = os.getenv("DATABASE_URL")
+        
+        # Если DATABASE_URL не найден, пробуем собрать из отдельных переменных
         if not database_url:
-            logger.error("❌ DATABASE_URL не найден в переменных окружения")
-            return None
+            user = os.getenv("DB_USER", "postgres")
+            password = os.getenv("DB_PASSWORD")
+            host = os.getenv("DB_HOST")
+            port = os.getenv("DB_PORT", "5432")
+            dbname = os.getenv("DB_NAME", "postgres")
+            
+            if password and host:
+                database_url = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+                logger.info(f"🔧 Создали DATABASE_URL из отдельных переменных")
+            else:
+                logger.error("❌ DATABASE_URL не найден и отдельные переменные БД не настроены")
+                return None
         
         # Добавляем параметры для Supabase если их нет
         if "?" not in database_url:
