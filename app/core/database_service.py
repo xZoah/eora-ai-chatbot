@@ -6,6 +6,7 @@ import json
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 from loguru import logger
+import os
 
 from app.core.database import (
     User, ChatSession, Message, 
@@ -25,12 +26,23 @@ class DatabaseService:
         try:
             logger.info("🔧 Инициализируем подключение к Supabase...")
             
+            # Проверяем наличие переменных окружения
+            required_vars = ['DATABASE_URL']
+            missing_vars = [var for var in required_vars if not os.getenv(var)]
+            
+            if missing_vars:
+                logger.warning(f"⚠️ Отсутствуют переменные окружения: {missing_vars}")
+                return False
+            
             # Используем Transaction Pooler (IPv4 совместимый) как основной способ
             self.engine = create_database_engine_alternative()
             if not self.engine:
                 logger.warning("⚠️ Transaction Pooler не сработал, пробуем Direct Connection...")
                 # Fallback на основной способ
                 self.engine = create_database_engine()
+                if not self.engine:
+                    logger.error("❌ Не удалось подключиться к базе данных")
+                    return False
                 logger.info("✅ Direct Connection успешен")
             else:
                 logger.info("✅ Transaction Pooler подключение успешно")

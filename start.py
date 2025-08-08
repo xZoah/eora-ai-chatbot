@@ -27,7 +27,11 @@ def run_telegram_bot():
     print("🤖 Starting Telegram bot...")
     try:
         bot = EoraTelegramBot()
-        bot.run_bot()
+        success = bot.run_bot()
+        
+        if not success:
+            print("❌ Bot failed to start")
+            
     except Exception as e:
         print(f"❌ Error starting bot: {e}")
 
@@ -41,7 +45,7 @@ async def main():
     fastapi_thread.start()
     
     # Ждем немного для запуска FastAPI
-    await asyncio.sleep(2)
+    await asyncio.sleep(3)
     
     # Запускаем Telegram бота в основном потоке
     run_telegram_bot()

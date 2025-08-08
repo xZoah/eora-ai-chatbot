@@ -370,18 +370,21 @@ class EoraTelegramBot:
     def run_bot(self):
         """Запустить бота"""
         try:
-            # Инициализируем бота синхронно
+            # Инициализируем RAG менеджер
             if not self.rag_manager:
                 self.rag_manager = RAGManager()
                 if not self.rag_manager.initialize_services():
                     logger.error("❌ Не удалось инициализировать RAG менеджер")
                     return False
 
-            # Инициализируем базу данных
+            # Инициализируем базу данных (опционально)
             if not self.database_service:
-                self.database_service = DatabaseService()
-                if not self.database_service.initialize():
-                    logger.warning("⚠️ Не удалось инициализировать базу данных, продолжаем без неё")
+                try:
+                    self.database_service = DatabaseService()
+                    if not self.database_service.initialize():
+                        logger.warning("⚠️ Не удалось инициализировать базу данных, продолжаем без неё")
+                except Exception as e:
+                    logger.warning(f"⚠️ База данных недоступна: {e}")
 
             # Создаем приложение
             application = Application.builder().token(self.bot_token).build()
@@ -397,8 +400,16 @@ class EoraTelegramBot:
             logger.success("✅ Telegram бот готов к работе")
             logger.info("🤖 Бот запущен. Нажмите Ctrl+C для остановки.")
 
-            # Запускаем бота напрямую
-            application.run_polling(allowed_updates=Update.ALL_TYPES)
+            # Запускаем бота с обработкой ошибок
+            try:
+                application.run_polling(
+                    allowed_updates=Update.ALL_TYPES,
+                    drop_pending_updates=True,
+                    close_loop=False
+                )
+            except Exception as e:
+                logger.error(f"❌ Ошибка при запуске polling: {e}")
+                return False
 
         except Exception as e:
             logger.error(f"❌ Ошибка при запуске бота: {e}")
