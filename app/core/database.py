@@ -60,19 +60,17 @@ def get_database_url() -> str:
 def create_database_engine_alternative():
     """Альтернативный способ создания engine с Transaction Pooler (IPv4 совместимый)"""
     try:
-        # Читаем параметры из переменных окружения
-        user = os.getenv("user")
-        password = os.getenv("password") 
-        host = os.getenv("host")
-        port = os.getenv("port")
-        database = os.getenv("dbname")
-        
-        if not all([user, password, host, port, database]):
-            logger.error("❌ Не все параметры Supabase найдены в переменных окружения")
+        # Используем DATABASE_URL как основной способ
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            logger.error("❌ DATABASE_URL не найден в переменных окружения")
             return None
         
-        database_url = f"postgresql://{user}:{password}@{host}:{port}/{database}?sslmode=require"
-        logger.info(f"🔧 Подключаемся к Supabase Transaction Pooler: {user}@{host}:{port}")
+        # Добавляем параметры для Supabase если их нет
+        if "?" not in database_url:
+            database_url += "?sslmode=require&client_encoding=utf8"
+        
+        logger.info(f"🔧 Подключаемся к базе данных через DATABASE_URL")
         
         # Используем postgresql+psycopg2 как рекомендует Supabase
         engine = create_engine(database_url, echo=False)
