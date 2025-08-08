@@ -389,17 +389,24 @@ class EoraTelegramBot:
     async def handle_webhook_update(self, update_data: dict):
         """Обработать webhook update от Telegram"""
         try:
-            from telegram import Update
-            from telegram.ext import Application, ContextTypes
+            from telegram import Update, Bot
+            from telegram.ext import ContextTypes
+            
+            # Создаем Bot объект для обработки
+            bot = Bot(token=self.bot_token)
             
             # Создаем Update объект из данных
-            update = Update.de_json(update_data, self.application.bot)
+            update = Update.de_json(update_data, bot)
+            
+            # Создаем контекст
+            context = ContextTypes.DEFAULT_TYPE()
+            context.bot = bot
             
             # Обрабатываем сообщение
             if update.message:
-                await self.handle_message(update, ContextTypes.DEFAULT_TYPE())
+                await self.handle_message(update, context)
             elif update.callback_query:
-                await self.handle_callback(update, ContextTypes.DEFAULT_TYPE())
+                await self.handle_callback(update, context)
                 
         except Exception as e:
             logger.error(f"❌ Ошибка при обработке webhook: {e}")
