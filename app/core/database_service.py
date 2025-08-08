@@ -131,6 +131,9 @@ class DatabaseService:
             import uuid
             session_id = str(uuid.uuid4())
             
+            # Убеждаемся что user_id это число
+            user_id = int(user_id)
+            
             session = ChatSession(
                 user_id=user_id,
                 session_id=session_id
@@ -147,11 +150,17 @@ class DatabaseService:
                 self.session.rollback()
             return None
     
-    def get_or_create_active_session(self, user_id: int) -> Optional[ChatSession]:
+    def get_or_create_active_session(self, user_id: str) -> Optional[str]:
         """Получить активную сессию или создать новую"""
         try:
             if not self.session:
                 logger.warning("⚠️ База данных не инициализирована")
+                return None
+                
+            # Сначала получаем или создаем пользователя
+            user = self.get_or_create_user(user_id)
+            if not user:
+                logger.error(f"❌ Не удалось создать пользователя: {user_id}")
                 return None
                 
             # Ищем активную сессию (последнюю созданную за последние 24 часа)
@@ -159,23 +168,24 @@ class DatabaseService:
             cutoff_time = datetime.utcnow() - timedelta(hours=24)
             
             active_session = self.session.query(ChatSession).filter(
-                ChatSession.user_id == user_id,
+                ChatSession.user_id == user.id,
                 ChatSession.created_at >= cutoff_time
             ).order_by(ChatSession.created_at.desc()).first()
             
             if active_session:
                 logger.info(f"💬 Используем существующую сессию: {active_session.session_id}")
-                return active_session
+                return active_session.session_id
             else:
                 # Создаем новую сессию
-                return self.create_chat_session(user_id)
+                new_session = self.create_chat_session(user.id)
+                return new_session.session_id if new_session else None
                 
         except Exception as e:
             logger.error(f"Ошибка при получении активной сессии: {e}")
             return None
     
     def save_message(self, session_id: str, user_message: str, bot_response: str,
-                    sources: list = None, complexity_level: str = "medium", processing_time: float = None) -> bool:
+                    sources: list = None, complexity_level: str = "medium") -> bool:
         """Сохранить сообщение в базу данных"""
         try:
             if not self.session:
@@ -189,8 +199,7 @@ class DatabaseService:
                 user_message=user_message,
                 bot_response=bot_response,
                 sources=sources_json,
-                complexity_level=complexity_level,
-                processing_time=processing_time
+                complexity_level=complexity_level
             )
             self.session.add(message)
             self.session.commit()

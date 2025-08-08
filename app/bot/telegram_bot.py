@@ -223,15 +223,17 @@ class EoraTelegramBot:
                 # Сохраняем сообщение в базу данных
                 if self.database_service and self.database_service.engine:
                     try:
-                        session_id = await self.database_service.get_or_create_active_session(str(user_id))
-                        await self.database_service.save_message(
-                            session_id=session_id,
-                            user_message=message_text,
-                            bot_response=response,
-                            complexity_level=complexity_level,
-                            processing_time=processing_time
-                        )
-                        logger.success(f"✅ Сообщение сохранено в БД для пользователя {user_id}")
+                        session_id = self.database_service.get_or_create_active_session(str(user_id))
+                        if session_id:
+                            self.database_service.save_message(
+                                session_id=session_id,
+                                user_message=message_text,
+                                bot_response=response,
+                                complexity_level=complexity_level
+                            )
+                            logger.success(f"✅ Сообщение сохранено в БД для пользователя {user_id}")
+                        else:
+                            logger.warning(f"⚠️ Не удалось создать сессию для пользователя {user_id}")
                     except Exception as e:
                         logger.warning(f"⚠️ Не удалось сохранить в БД: {e}")
                 else:
