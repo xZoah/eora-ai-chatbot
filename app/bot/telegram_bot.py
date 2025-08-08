@@ -365,10 +365,47 @@ class EoraTelegramBot:
             "medium": "📋 Средний", 
             "hard": "📖 Сложный"
         }
-        return levels.get(level, "📋 Средний")
+        return levels.get(level, "�� Средний")
+
+    def setup_webhook(self, webhook_url: str) -> bool:
+        """Настроить webhook для бота"""
+        try:
+            from telegram import Bot
+            
+            bot = Bot(token=self.bot_token)
+            result = bot.set_webhook(url=webhook_url)
+            
+            if result:
+                logger.success(f"✅ Webhook установлен: {webhook_url}")
+                return True
+            else:
+                logger.error("❌ Не удалось установить webhook")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка при установке webhook: {e}")
+            return False
+
+    async def handle_webhook_update(self, update_data: dict):
+        """Обработать webhook update от Telegram"""
+        try:
+            from telegram import Update
+            from telegram.ext import Application, ContextTypes
+            
+            # Создаем Update объект из данных
+            update = Update.de_json(update_data, self.application.bot)
+            
+            # Обрабатываем сообщение
+            if update.message:
+                await self.handle_message(update, ContextTypes.DEFAULT_TYPE())
+            elif update.callback_query:
+                await self.handle_callback(update, ContextTypes.DEFAULT_TYPE())
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка при обработке webhook: {e}")
 
     def run_bot(self):
-        """Запустить бота"""
+        """Запустить бота (polling метод - для локальной разработки)"""
         try:
             # Инициализируем RAG менеджер
             if not self.rag_manager:
@@ -387,26 +424,32 @@ class EoraTelegramBot:
                     logger.warning(f"⚠️ База данных недоступна: {e}")
 
             # Создаем приложение
-            application = Application.builder().token(self.bot_token).build()
+            self.application = Application.builder().token(self.bot_token).build()
 
             # Добавляем обработчики
-            application.add_handler(CommandHandler("start", self.start_command))
-            application.add_handler(CommandHandler("help", self.help_command))
-            application.add_handler(CommandHandler("settings", self.settings_command))
-            application.add_handler(CommandHandler("stats", self.stats_command))
-            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
-            application.add_handler(CallbackQueryHandler(self.handle_callback))
+            self.application.add_handler(CommandHandler("start", self.start_command))
+            self.application.add_handler(CommandHandler("help", self.help_command))
+            self.application.add_handler(CommandHandler("settings", self.settings_command))
+            self.application.add_handler(CommandHandler("stats", self.stats_command))
+            self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
+            self.application.add_handler(CallbackQueryHandler(self.handle_callback))
 
             logger.success("✅ Telegram бот готов к работе")
             logger.info("🤖 Бот запущен. Нажмите Ctrl+C для остановки.")
 
             # Запускаем бота с обработкой ошибок
             try:
-                application.run_polling(
+                # Используем polling с дополнительными параметрами для Railway
+                self.application.run_polling(
                     allowed_updates=Update.ALL_TYPES,
                     drop_pending_updates=True,
-                    close_loop=False
+                    close_loop=False,
+                    read_timeout=30,
+                    write_timeout=30,
+                    connect_timeout=30,
+                    pool_timeout=30
                 )
+                return True
             except Exception as e:
                 logger.error(f"❌ Ошибка при запуске polling: {e}")
                 return False
