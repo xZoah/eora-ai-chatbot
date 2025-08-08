@@ -390,7 +390,6 @@ class EoraTelegramBot:
         """Обработать webhook update от Telegram"""
         try:
             from telegram import Update, Bot
-            from telegram.ext import ContextTypes
             
             # Создаем Bot объект для обработки
             bot = Bot(token=self.bot_token)
@@ -398,9 +397,12 @@ class EoraTelegramBot:
             # Создаем Update объект из данных
             update = Update.de_json(update_data, bot)
             
-            # Создаем контекст
-            context = ContextTypes.DEFAULT_TYPE()
-            context.bot = bot
+            # Создаем простой контекст без application
+            class SimpleContext:
+                def __init__(self, bot):
+                    self.bot = bot
+            
+            context = SimpleContext(bot)
             
             # Обрабатываем сообщение
             if update.message:
