@@ -34,11 +34,10 @@ class EmbeddingService:
                 text = text[:max_length]
                 logger.info(f"Текст обрезан до {max_length} символов")
             
-            # Генерируем эмбеддинг с размерностью 512
+            # Генерируем эмбеддинг
             response = openai.embeddings.create(
                 input=text,
-                model=self.model,
-                dimensions=512
+                model=self.model
             )
             embedding = response.data[0].embedding
             
