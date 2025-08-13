@@ -38,7 +38,7 @@ class EmbeddingService:
             response = self.client.embeddings.create(
                 model=self.model,  # Используем модель из инициализации
                 input=text,
-                dimensions=512  # Уменьшаем размерность до 512 для совместимости с индексом
+                dimensions=512  # Уменьшаем размерность до 512  для совместимости с индексом eora-cases embedding_model:text-embedding-3-small Dimensions 512
             )
             
             embedding = response.data[0].embedding
