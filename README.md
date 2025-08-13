@@ -1,4 +1,6 @@
-# EORA AI Chat Bot - Тестовое задание
+# EORA AI Chat Bot  
+
+ **Telegram бот:** @EORA_xzoahx_bot
 
 ## 🎯 Что было сделано
 
